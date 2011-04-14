@@ -1,0 +1,152 @@
+OWL Pipe
+
+OWL Pipe is a light-weight Pipeline framework. It is implemented as a Python 
+module called owl_pipe with no dependencies other than a reasonably recent 
+version of Python (see below for further information). It is either called "OWL 
+Pipe" or owl_pipe. The two names are used interchangeably in this document.
+
+OWL Pipe allows developers to construct Python based scientific pipelines out of
+reusable code. The framework provides two useful containers: a Pipeline object 
+and a Stage object.
+
+A Pipeline is an ordered collection of Stages. Stages are typically atomic 
+operations performed on the data being processed by the Pipeline itself. As a
+simple example from basic astronomical processing, a Stage could be the bias
+subtraction step while a pipeline could be basic image detrending.
+
+Pipelines in owl_pipe are built by creating an ASCII configuration file. That 
+file is where, among other things, the Stages forming that pipeline are defined.
+Each Stage has a separate configuration file where parameters and I/O 
+information for that Stage can be specified.
+
+Both Pipeline and Stage instances have access to some instance variables:
+    1. log: a Logger instance from the Python logging module.
+    2. clipboard: a dictionary for passing data in-memory across Stages (see 
+       below)
+    3. qualified_name: fully qualified name, mostly used in logs. For Pipeline
+       instances it is <system>.<name>. For Stage instances it is 
+       <pipeline qualified_name>.<name>.
+    4. name: the Pipeline/Stage name.
+    5. clipboard: the clipboard dictionary.
+Pipeline instances have these additional instance variables:
+    1. system: the name of the Pipeline system.
+    2. log_level: the log threshold.
+    3. local_logs: boolean determining whether to write logs to disk or STDOUT.
+    4. stages: list of Stage instances for that Pipeline.
+Stage instances have these additional instance variables:
+    1. pipeline: the Pipeline instance the Stage belongs to.
+    2. input_info: a dictionary corresponding to the input dictionary in the
+       Stage configuration file (see below).
+    3. output_info: a dictionary corresponding to the output dictionary in the
+       Stage configuration file (see below).
+    4. Any parameter defined in the parameters dictionary in the Stage 
+       configuration file (see below).
+
+Clearly, OWL Pipe stands on the shoulder of giants, among which NOAO NHPPS and 
+LSST pex_harness. As such it borrows features and ideas from its predecessors
+quite heavily.
+
+
+
+Requirements
+OWL Pipe uses the "json" module, included in the Python Standard Library 
+starting from Python 2.6. This means that owl_pipe requires either Python 2.6 or
+later or Python 2.5 provided that the "simplejson" Python module is installed.
+
+Python 2.5 or later can be obtained from http://www.python.org
+simplejson can be found at https://github.com/simplejson/simplejson
+
+
+
+Installation
+Installation uses the standard python distutil module as detailed in the Python 
+web site: http://docs.python.org/install/index.html#install-index
+
+Basically, 
+    shell> python setup.py install
+should suffice.
+
+
+
+Configuration File Format
+The Pipeline and Stage definition files are written in JSON (http://json.org/) 
+with two main extensions for convenience sake:
+    1. Comments, starting with //.
+    2. Variable names without quotes.
+Comments start with a '//' and go to the end of the line. Standard JSON does not
+allow comments. Also contrary to standard JSON, variable names and dictionary 
+keys are not enclosed in double quotes. A pre-processing step transforms these 
+configuration files into valid JSON.
+
+
+
+Pipeline Definition File Structure
+Required high level dictionaries:
+    1. Pipeline
+
+Optional high level dictionaries:
+    None
+
+The Pipeline dictionary
+Required keys:
+    1. name: the name of the Pipeline, can be anything and is only used in logs.
+    2. system: the name of the pipeline system. Again it can be anything and
+       is only used in logs to group pipelines together.
+    3. stages: a list of dictionaries, each one defining a Stage (see below).
+Optional keys:
+    1. log_level: if present, it must be one of the log levels defined by the
+       Python logging module. It defaults to "DEBUG".
+    2. local_log_mode: if present and true, a log file is written to disk in the
+       local directory as <system>.<name>.log. If false, log messages are 
+       written to STDOUT. It defaults to false.
+
+Dictionaries in the stages list
+Required keys:
+    1. name: the name of the Stage instance. Can be anything and is only used in
+       logs.
+    2. config_file: the path to the Stage configuration file (see below).
+    3. python_class: the fully qualified name of the Python class to instantiate
+       for the Stage.
+Optional keys:
+    None
+
+
+
+Stage Configuration File Structure
+Required high level dictionaries:
+    None
+
+Optional high level dictionaries:
+    1. parameters
+    2. input
+    3. output
+
+The parameters dictionary
+Required keys:
+    None
+Optional keys:
+    1. Parameter name: parameter value. The Stage instance will have access to 
+       parameters by name directly (i.e. as instance variables of the 
+       appropriate type, accessed using the usual Python self. notation). Only
+       simple JSON types are supported (i.e. int, float, bool, str).
+
+The input dictionary
+Required keys:
+    None
+Optional keys:
+    1. Name of clipboard keys holding input data for the Stage instance. The 
+       corresponding value is the fully qualified name of a Python class. The
+       Stage instance will check at run time that the clipboard object 
+       corresponding to this key is indeed an instance of that Python class.
+
+The output dictionary
+Required keys:
+    None
+Optional keys:
+    1. Name of clipboard keys holding output data for the Stage instance. The 
+       corresponding value is the fully qualified name of a Python class. The
+       Stage instance will check at run time that the object to put on the 
+       clipboard at that key is indeed an instance of that Python class.
+
+
+
