@@ -130,19 +130,19 @@ class Stage(object):
             self.log.debug('Clipboard input keys and object types are OK.')
         
         # Run the Stage-specific code.
-        self._run()
+        self.process()
         
         self.log.info('Stage %s done.' % (self.name))
         return
     
     
-    def _run(self):
+    def process(self):
         """
         This is where real work happens. Every Stage subclass has to override
         this method. The default behaviour is to raise a NotImplementedError
         exception.
         """
-        raise(NotImplementedError('Stages have to override the _run method.'))
+        raise(NotImplementedError('Stages have to override process().'))
 
 
 

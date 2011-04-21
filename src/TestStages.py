@@ -33,7 +33,7 @@ import utilities
 
 
 class DummyInitStage(Stage):
-    def _run(self):
+    def process(self):
         # Handle self.output_info
         for (key, class_name) in self.output_info.items():
             # Import class_name.
@@ -53,14 +53,14 @@ class DummyInitStage(Stage):
 
 
 class DummyStage(Stage):
-    def _run(self):
+    def process(self):
         # Do nothing.
         return
 
 
 
 class AnotherDummyStage(Stage):
-    def _run(self):
+    def process(self):
         # Handle self.input_info
         for (key, class_name) in self.input_info.items():
             # Log what we found.
