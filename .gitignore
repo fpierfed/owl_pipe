@@ -1,0 +1,4 @@
+# Python compiled sources
+*.pyc
+*.pyo
+
