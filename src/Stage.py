@@ -130,10 +130,10 @@ class Stage(object):
             self.log.debug('Clipboard input keys and object types are OK.')
         
         # Run the Stage-specific code.
-        self.process()
+        err = self.process()
         
         self.log.info('Stage %s done.' % (self.name))
-        return
+        return(err)
     
     
     def process(self):

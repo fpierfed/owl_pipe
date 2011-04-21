@@ -121,7 +121,10 @@ class Pipeline(object):
         """
         for stage in self.stages:
             self.log.info('Starting Stage %s' % (stage.name))
-            stage.run()
+            error = stage.run()
+            if(error):
+                raise(Exception('Stage %s exited with error code %d' \
+                      % (stage.name, error)))
         return
 
 

@@ -48,14 +48,14 @@ class DummyInitStage(Stage):
             # Log what we did.
             self.log.info('Added a new instance of %s to the clipboard as %s' \
                           % (class_name, key))
-        return
+        return(0)
 
 
 
 class DummyStage(Stage):
     def process(self):
         # Do nothing.
-        return
+        return(0)
 
 
 
@@ -81,4 +81,4 @@ class AnotherDummyStage(Stage):
             # Log what we did.
             self.log.info('Added a new instance of %s to the clipboard as %s' \
                           % (class_name, key))
-        return
+        return(0)
