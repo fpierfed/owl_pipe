@@ -70,10 +70,10 @@ class Stage(object):
             input = config.get('input', {})
             output = config.get('output', {})
         
-        # Turn the keys in config to strings.
+        # Turn the keys in config to strings from unicode.
         parameters = dict([(str(k), v) for (k, v) in parameters.items()])
-        input = dict([(str(k), v) for (k, v) in input.items()])
-        output = dict([(str(k), v) for (k, v) in output.items()])
+        input = [(str(x), str(y)) for [x, y] in input]
+        output = [(str(x), str(y)) for [x, y] in output]
         
         # Now we have everything we need to create a Stage instance.
         return(stage_class(name=pipeline_config['name'], 
@@ -119,20 +119,39 @@ class Stage(object):
         self.log.info('Stage %s starting.' % (self.name))
         
         if(clipboard_check):
-            self.log.debug('Checking clipboard input keys and object types.')
-            for key in self.input_info:
-                # Make sure that the clipboard has the key.
-                assert(self.clipboard.has_key(key))
-                # Make sure that the corresponding object is of a class that
-                # we can import.
-                cls = utilities.import_class(self.input_info[key])
-                assert(isinstance(self.clipboard[key], cls))
-            self.log.debug('Clipboard input keys and object types are OK.')
+            self.log.debug('Checking clipboard input types.')
+            
+            item_index = 0
+            for (var_name, class_name) in self.input_info:
+                item_index -= 1
+                
+                # Now, var_name is just the name we should use internally and so
+                # it has no meaning outside of this instance. What we care about
+                # are the classes.
+                cls = utilities.import_class(class_name)
+                assert(isinstance(self.clipboard[item_index], cls))
+            self.log.debug('Clipboard input types are OK.')
+        
         
         # Run the Stage-specific code.
         err = self.process()
+        self.log.info('Stage %s done (return value: %s).' \
+                      % (self.name, str(err)))
         
-        self.log.info('Stage %s done.' % (self.name))
+        
+        if(clipboard_check):
+            self.log.debug('Checking clipboard output types.')
+            
+            item_index = 0
+            for (var_name, class_name) in self.output_info:
+                item_index -= 1
+                
+                # Now, var_name is just the name we should use internally and so
+                # it has no meaning outside of this instance. What we care about
+                # are the classes.
+                cls = utilities.import_class(class_name)
+                assert(isinstance(self.clipboard[item_index], cls))
+            self.log.debug('Clipboard output types are OK.')
         return(err)
     
     

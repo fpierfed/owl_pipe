@@ -35,7 +35,7 @@ import utilities
 class DummyInitStage(Stage):
     def process(self):
         # Handle self.output_info
-        for (key, class_name) in self.output_info.items():
+        for (var_name, class_name) in self.output_info:
             # Import class_name.
             cls = utilities.import_class(class_name)
             
@@ -43,11 +43,11 @@ class DummyInitStage(Stage):
             dummy_object = cls()
             
             # Write it in the clipboard.
-            self.clipboard[key] = dummy_object
+            self.clipboard.append(dummy_object)
             
             # Log what we did.
-            self.log.info('Added a new instance of %s to the clipboard as %s' \
-                          % (class_name, key))
+            self.log.info('Added a new instance of %s to the clipboard.' \
+                          % (class_name))
         return(0)
 
 
@@ -55,6 +55,7 @@ class DummyInitStage(Stage):
 class DummyStage(Stage):
     def process(self):
         # Do nothing.
+        self.log.info('So lazy, so lazy....')
         return(0)
 
 
@@ -62,13 +63,15 @@ class DummyStage(Stage):
 class AnotherDummyStage(Stage):
     def process(self):
         # Handle self.input_info
-        for (key, class_name) in self.input_info.items():
+        for (var_name, class_name) in self.input_info:
+            thing = self.clipboard.pop()
+            
             # Log what we found.
             self.log.info('Found an instance of %s in the clipboard as %s' \
-                          % (self.clipboard[key].__class__.__name__, key))
+                          % (thing.__class__.__name__, var_name))
         
         # Handle self.output_info
-        for (key, class_name) in self.output_info.items():
+        for (var_name, class_name) in self.output_info:
             # Import class_name.
             cls = utilities.import_class(class_name)
             
@@ -76,9 +79,9 @@ class AnotherDummyStage(Stage):
             dummy_object = cls()
             
             # Write it in the clipboard.
-            self.clipboard[key] = dummy_object
+            self.clipboard.append(dummy_object)
             
             # Log what we did.
-            self.log.info('Added a new instance of %s to the clipboard as %s' \
-                          % (class_name, key))
+            self.log.info('Added a new instance of %s to the clipboard.' \
+                          % (class_name))
         return(0)
