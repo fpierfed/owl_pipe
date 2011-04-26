@@ -31,7 +31,13 @@
 
 
 class Image(object):
-    pass
+    """
+    Dummy wrapper around a PyFITS HDU list.
+    """
+    def __init__(self, hdu_list=[]):
+        self.hdu_list = hdu_list
+        return
+
 
 
 
