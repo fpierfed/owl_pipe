@@ -31,7 +31,12 @@ Our configuration files are JSON with two differences:
     1. Comments which start which start with // and go to the end of the line.
     2. Only strings have double quotes, not variables names not dictionary keys.
 """
-import json
+# Try and import the json module. If that fails (maybe because we are on Python
+# 2.5, import simplejson as json. If that fails as well... too bad!
+try:
+    import json
+except:
+    import simplejson as json
 import re
 
 
