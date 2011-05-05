@@ -61,33 +61,36 @@ class FitsImageIOStage(Stage):
         return(self.process_mef(image=hdus))
     
     
-    def process_cube(self,image):
+    def process_cube(self, image):
         """
         Process a data cube.
         """
         self.log.info('Processing a data cube.')
         
-        self.clipboard.append(models.Image([image, ]))
+        key_name = self.output_info['exposure'][0]
+        self.clipboard[key_name] = models.Image([image, ])
         return(0)
     
     
-    def process_sif(self,image):
+    def process_sif(self, image):
         """
         Process a single-extension FITS file.
         """
         self.log.info('Processing a single-extension FITS file.')
         
-        self.clipboard.append(models.Image([image,]))
+        key_name = self.output_info['exposure'][0]
+        self.clipboard[key_name] = models.Image([image,])
         return(0)
     
     
-    def process_mef(self,images):
+    def process_mef(self, images):
         """
         Process a multi-extension FITS file.
         """
         self.log.info('Processing a multi-extension FITS file.')
         
-        self.clipboard.append(models.Image(images))
+        key_name = self.output_info['exposure'][0]
+        self.clipboard[key_name] = models.Image(images)
         return(0)
 
 

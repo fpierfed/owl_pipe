@@ -48,7 +48,7 @@ class Pipeline(object):
         `configFile` which specifies the Pipeline stages, data directories
         etc.
         """
-        parsed = config_parser.loads(open(config_file).read())['Pipeline']
+        parsed = config_parser.loads(open(config_file).read())['pipeline']
         
         # Create a Pipeline instance with no stages, we will add them later.
         pipe = cls(name=parsed['name'],
@@ -78,13 +78,13 @@ class Pipeline(object):
         self.log_level = getattr(logging, log_level)
         self.local_logs = local_logs
         self.stages = []
-        # The clipboard is a stack for input and output data (consumed/produced 
-        # by Stages). Stages get items from the top of the clipboard, work on 
-        # them and then put their products back on the top of the stack. What to
+        # The clipboard is a dictionary for input and output data (consumed and
+        # produced by Stages). Stages get items from the clipboard, work on 
+        # them and then put their products back in the clipboard. What to
         # get from the clipboard is defined in the Stage configuration file in 
-        # the input[] list. WHat to put back is defined in the Stage 
-        # configuration file, in the output[] list.
-        self.clipboard = []
+        # the input_keys dictionary. What to put back is defined in the Stage 
+        # configuration file, in the output_keys dictionary.
+        self.clipboard = {}
         
         # Now create a logger.
         logger = logging.getLogger(self.qualified_name)
