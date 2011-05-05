@@ -49,6 +49,10 @@ class Stage(object):
         Create a Stage instance from a JSON configuration file 
         `configFile` which specifies the Stage stages, data directories
         etc.
+        
+        If a sile called <self.name>.spec is found in the same directory as the
+        Stage class source code, then the configuration file is validated 
+        against the spec file.
         """
         # First understand which Stage (sub)class we need to instantiate. The 
         # class name is given in full Python package notation, e.g.
@@ -67,13 +71,23 @@ class Stage(object):
         if(config_file):
             config = config_parser.loads(open(config_file).read())
             parameters = config.get('parameters', {})
-            input = config.get('input', {})
-            output = config.get('output', {})
+            input = config.get('input_keys', {})
+            output = config.get('output_keys', {})
         
         # Turn the keys in config to strings from unicode.
         parameters = dict([(str(k), v) for (k, v) in parameters.items()])
-        input = [(str(x), str(y)) for [x, y] in input]
-        output = [(str(x), str(y)) for [x, y] in output]
+        input = dict([(str(k), (str(v1), str(v2))) 
+                      for (k, (v1, v2)) in input.items()])
+        output = dict([(str(k), (str(v1), str(v2))) 
+                      for (k, (v1, v2)) in output.items()])
+        
+        # Do we have a spec file? If so, do parameter and input/output key 
+        # validation as well. If not keep going.
+        if(utilities.find_spec_file(stage_class)):
+            utilities.validate_stage_config(stage_class, 
+                                            parameters, 
+                                            input, 
+                                            output)
         
         # Now we have everything we need to create a Stage instance.
         return(stage_class(name=pipeline_config['name'], 
@@ -121,15 +135,12 @@ class Stage(object):
         if(clipboard_check):
             self.log.debug('Checking clipboard input types.')
             
-            item_index = 0
-            for (var_name, class_name) in self.input_info:
-                item_index -= 1
-                
+            for (var_name, (key_name, class_name)) in self.input_info.items():
                 # Now, var_name is just the name we should use internally and so
                 # it has no meaning outside of this instance. What we care about
                 # are the classes.
                 cls = utilities.import_class(class_name)
-                assert(isinstance(self.clipboard[item_index], cls))
+                assert(isinstance(self.clipboard[key_name], cls))
             self.log.debug('Clipboard input types are OK.')
         
         
@@ -142,15 +153,12 @@ class Stage(object):
         if(clipboard_check):
             self.log.debug('Checking clipboard output types.')
             
-            item_index = 0
-            for (var_name, class_name) in self.output_info:
-                item_index -= 1
-                
+            for (var_name, (key_name, class_name)) in self.output_info.items():
                 # Now, var_name is just the name we should use internally and so
                 # it has no meaning outside of this instance. What we care about
                 # are the classes.
                 cls = utilities.import_class(class_name)
-                assert(isinstance(self.clipboard[item_index], cls))
+                assert(isinstance(self.clipboard[key_name], cls))
             self.log.debug('Clipboard output types are OK.')
         return(err)
     

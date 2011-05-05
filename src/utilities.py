@@ -29,6 +29,8 @@
 """
 Utilities
 """
+import inspect
+import os
 import sys
 
 
@@ -75,5 +77,85 @@ def import_class(full_name, subclassof=None):
               % (class_name, package_name, subclassof.__name__)
         raise(NotImplementedError(msg))
     return(stage_class)
+
+
+
+def get_spec_file_path(stage_class):
+    """
+    Given a Stage (sub)class, divine and return the full path to the 
+    corresponding spec file. Use the fact that by convention, the spec file is 
+    in the same directory as the `stage_class` source file. It has the name of 
+    the Stage (sub)class and extension .spec.
+    """
+    stage_source_file = os.path.abspath(inspect.getfile(stage_class))
+    root = os.path.splitext(stage_source_file)[0]
+    return(root + '.spec')
+
+
+
+def find_spec_file(stage_class):
+    """
+    Return True is a file named <stage_class.__name__>.spec exists in the same
+    director as <stage_class.__name__>.py. Return False otherwise.
+    """
+    return(os.path.exists(get_spec_file_path(stage_class)))
+
+
+
+
+def validate_stage_config(stage_class, parameters, input, output):
+    """
+    Given a Stage (sub)class `stage_class`, a dictionary of Stage parameter 
+    names and values `parameters`, a list of input and output 
+    """
+    return(True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
