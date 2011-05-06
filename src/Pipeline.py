@@ -48,7 +48,7 @@ class Pipeline(object):
         `configFile` which specifies the Pipeline stages, data directories
         etc.
         """
-        parsed = config_parser.loads(open(config_file).read())['pipeline']
+        parsed = config_parser.loads(config_file)['pipeline']
         
         # Create a Pipeline instance with no stages, we will add them later.
         pipe = cls(name=parsed['name'],

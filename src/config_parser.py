@@ -27,53 +27,183 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 """
-Our configuration files are JSON with two differences:
-    1. Comments which start which start with // and go to the end of the line.
-    2. Only strings have double quotes, not variables names not dictionary keys.
+Our configuration files are ConfigObj/INI files.
 """
-# Try and import the json module. If that fails (maybe because we are on Python
-# 2.5, import simplejson as json. If that fails as well... too bad!
-try:
-    import json
-except:
-    import simplejson as json
-import re
-
-
-
-# Constants
-# See also http://docs.python.org/reference/lexical_analysis.html for valid
-# Python variable names.
-ADD_QUOTES_SRC = re.compile('([a-zA-Z_][a-zA-Z_0-9]*)(\s*:.+)')
-ADD_QUOTES_DST = r'"\1"\2'
+from configobj import ConfigObj
+from validate import Validator, VdtTypeError
 
 
 
 
-def loads(raw_text, *args, **kws):
+
+
+class ValidationError(Exception): pass
+
+
+
+
+def loads(config_file, specfile=None):
     """
-    Massage raw_text so that it is valid JSON.
+    Read the input `raw_text` and return a dictionary with the parsed 
+    configuration.
     """
-    # Massage raw_test so that it is valid JSON and then pass it to json.loads.
-    json_text = ''
+    if(not specfile):
+        config = simple_parse(config_file)
+    else:
+        config = validated_parse(config_file, specfile)
     
-    for raw_line in raw_text.split('\n'):
-        # Remove comments
-        tokens = raw_line.split('//', 1)
-        code = tokens[0]
-        if(len(tokens) == 2):
-            code, comment = tokens
+    # Add a 'name' key to each of the 'stages' dictionaries and set its value to
+    # the corresponding key in the original 'stages' entry. This only if we are 
+    # parsing a pipeline config file, that is. Kind of messy :-(
+    if(config.has_key('pipeline')):
+        return(_pipeline_config_fix(config))
+    return(config)
+
+
+
+def validated_parse(config_file, specfile):
+    """
+    Parse config_file, in INI format, and do validation with the provided 
+    specfile.
+    """
+    config = ConfigObj(config_file, configspec=specfile)
+    spec = ConfigObj(specfile)
+    validator = Validator()
+    
+    # First validation: make sure that stage_config does not have any spurious
+    # section.
+    extra_sections = [s for s in config.keys() if s not in spec.keys()]
+    if(extra_sections):
+        msg = "these sections are unknown: %s." % (', '.join(extra_sections))
+        raise(ValidationError(msg))
+    
+    
+    print(spec)
+    
+    # Now, make sure that we do not have spurious stuff in each section.
+    for section in spec.keys():
+        config_section = config[section]
+        spec_section = spec[section]
         
-        code = code.rstrip()
-        if(not code):
-            continue
-        
-        # Quote keywords.
-        json_line = ADD_QUOTES_SRC.sub(ADD_QUOTES_DST, code)
-        
-        # Make sure that we still have a \n at the end.
-        if(not json_line.endswith('\n')):
-            json_line += '\n'
-        
-        json_text += json_line
-    return(json.loads(json_text, *args, **kws))
+        extra_keys = [k for k in config_section.keys() \
+                      if k not in spec_section.keys()]
+        if(extra_keys):
+            msg = "These entries in the %s section are unknown: %s" \
+                  % (section, ', '.join(extra_keys))
+            raise(ValidationError(msg))
+    
+    # Finally do the ConfigObj validation and hope that nothing happens.
+    ok = config.validate(validator)
+    if(not ok):
+        # ConfigObj failed but there seems to be no way to know why reliably
+        # meaning that flatten_errors does not really work... let's check by 
+        # hand.
+        for section in spec.keys():
+            config_section = config[section]
+            spec_section = spec[section]
+            
+            # Repeat the validation.
+            for key in spec_section.keys():
+                try:
+                    raw_value = config_section[key]
+                except KeyError:
+                    # So, the key is not optional and it is not there: mistake!
+                    msg = 'missing required %s key in section %s.' \
+                           % (key, section)
+                    raise(ValidationError(msg))
+                    
+                rule = spec_section[key]
+                if(isinstance(rule, list)):
+                    rule = ' '.join(rule)
+                try:
+                    parsed_value = validator.check(rule, raw_value)
+                except VdtTypeError:
+                     # Wrong type: mistake!
+                    msg = '%s=%s in section %s does not satisfy rule %s.' \
+                           % (key, raw_value, section, rule)
+                    raise(ValidationError(msg))
+                
+                
+    return(config)
+
+
+
+def simple_parse(config_file):
+    """
+    Do simple parsing and home-brewed type interference.
+    """
+    config = ConfigObj(config_file)
+    config.walk(string_to_python_type)
+    return(config)
+
+
+
+
+def _pipeline_config_fix(config):
+    """
+    Add a 'name' key to each of the 'stages' dictionaries and set its value to
+    the corresponding key in the original 'stages' entry. This only if we are 
+    parsing a pipeline config file, that is. Kind of messy :-(
+    """
+    for stage_name in config['pipeline']['stages']:
+        config['pipeline']['stages'][stage_name]['name'] = stage_name
+    config['pipeline']['stages'] = config['pipeline']['stages'].values()
+    return(config)
+
+
+
+def string_to_python_type(section, key):
+    """
+    Do blind type inferring.
+    """
+    # We parse scalars and lists.
+    val = section[key]
+    if(isinstance(val, list)):
+        typed_val = [_parse(x) for x in val]
+    else:
+        typed_val = _parse(val)
+    section[key] = typed_val
+    return
+
+
+
+def _parse(val):
+    """
+    Do the actual parsing of scalar strings into scalar python types.
+    """
+    if(val.lower() == 'true'):
+        return(True)
+    elif(val.lower() == 'false'):
+        return(False)
+    try:
+        return(int(val))
+    except:
+        pass
+    try:
+        return(float(val))
+    except:
+        pass
+    return(str(val))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -33,14 +33,8 @@ import inspect
 import os
 import sys
 
-import config_parser
 
 
-
-
-
-
-class ValidationError(Exception): pass
 
 
 
@@ -105,123 +99,10 @@ def find_spec_file(stage_class):
     Return True is a file named <stage_class.__name__>.spec exists in the same
     director as <stage_class.__name__>.py. Return False otherwise.
     """
-    return(os.path.exists(get_spec_file_path(stage_class)))
-
-
-
-
-def validate_stage_config(stage_class, stage_config):
-    """
-    Given a Stage (sub)class `stage_class` and a parsed Stage configuration file
-    `stage_config`, make sure that everything makes sense according to the Stage
-    spec file.
-    
-    If a spec file is found and the config file validates (meaning that 
-    `parameters`, `input` and `output` validate), then return True.
-    If a spec file is not found, then return False.
-    If a spec file is found but there is a validation error, raise an exception.
-    """
-    # Read the spec file in, parse it and understand what we nee to do. If the
-    # spec file cannot be found, oh well... return False.
     spec_file = get_spec_file_path(stage_class)
-    if(not os.path.exists(spec_file)):
-        return(False)
-    
-    # Parse the spec file.
-    constraints = config_parser.loads(open(spec_file).read())
-    sections = ('parameters', 'input_keys', 'output_keys')
-    
-    # First validation: make sure that stage_config does not have any spurious
-    # section.
-    extra_sections = [s for s in stage_config.keys() if s not in sections]
-    if(extra_sections):
-        msg = "these sections in the %s configuration file are unknown: %s." \
-              % (stage_class.__name__, ', '.join(extra_sections))
-        raise(ValidationError(msg))
-    
-    
-    # TODO: Default value support.
-    # Now, one by one, make sure each section validates.
-    for section in sections:
-        constraint = constraints.get(section, {})
-        config = stage_config.get(section, {})
-        
-        # First make sure that we have no keys in in the config that are not in
-        # the spec file.
-        extra_keys = [k for k in config.keys() if k not in constraint.keys()]
-        if(extra_keys):
-            msg = "These entries in the %s section are unknown: %s" \
-                  % (section, ', '.join(extra_keys))
-            raise(ValidationError(msg))
-        
-        # Now make sure that if a key is required, it is there. Also if a key is
-        # there, make sure that it is of the correct type.
-        for key in constraint.keys():
-            key_constraints = constraint[key]
-            
-            # Is the key there if it should be?
-            if(not key in config.keys() and not key_constraints['optional']):
-                # So, the key is not optional and it is not there: mistake!
-                msg = 'missing required %s key in section %s.' % (key, section)
-                raise(ValidationError(msg))
-            
-            # Now, make sure that if the key is there, it is of the right type.
-            key_type = type(config[key]).__name__
-            if(key_type == 'unicode'):
-                key_type = 'str'
-            if(not key_type == key_constraints['type']):
-                # Wrong type: mistake!
-                msg = '%s key in section %s if of type %s instead of %s.' \
-                      % (key, section, key_type, key_constraints['type'])
-                raise(ValidationError(msg))
-        
-    return(True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    if(os.path.exists(spec_file)):
+        return(spec_file)
+    return
 
 
 
