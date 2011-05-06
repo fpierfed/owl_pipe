@@ -1,4 +1,5 @@
 # Python compiled sources
 *.pyc
 *.pyo
+*.fits
 
