@@ -66,13 +66,13 @@ class Stage(object):
         
         # Now, we have the right Python class for our Stage, we just need to
         # get to the corresponding config file and we are done.
-        config = {}
+        stage_config = {}
         config_file = pipeline_config.get('config_file', None)
         if(config_file):
-            config = config_parser.loads(open(config_file).read())
-            parameters = config.get('parameters', {})
-            input = config.get('input_keys', {})
-            output = config.get('output_keys', {})
+            stage_config = config_parser.loads(open(config_file).read())
+            parameters = stage_config.get('parameters', {})
+            input = stage_config.get('input_keys', {})
+            output = stage_config.get('output_keys', {})
         
         # Turn the keys in config to strings from unicode.
         parameters = dict([(str(k), v) for (k, v) in parameters.items()])
@@ -84,10 +84,14 @@ class Stage(object):
         # Do we have a spec file? If so, do parameter and input/output key 
         # validation as well. If not keep going.
         if(utilities.find_spec_file(stage_class)):
-            utilities.validate_stage_config(stage_class, 
-                                            parameters, 
-                                            input, 
-                                            output)
+            pipeline.log.debug("Validating config file for Stage %s..." \
+                               % (pipeline_config['name']))
+            utilities.validate_stage_config(stage_class, stage_config)
+            pipeline.log.debug("Stage %s config file validation OK." \
+                               % (pipeline_config['name']))
+        else:
+            pipeline.log.debug("No spec file for Stage %s." \
+                               % (pipeline_config['name']))
         
         # Now we have everything we need to create a Stage instance.
         return(stage_class(name=pipeline_config['name'], 
