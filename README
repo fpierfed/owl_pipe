@@ -48,12 +48,12 @@ quite heavily.
 
 
 Requirements
-OWL Pipe uses the "json" module, included in the Python Standard Library 
-starting from Python 2.6. This means that owl_pipe requires either Python 2.6 or
-later or Python 2.5 provided that the "simplejson" Python module is installed.
-
-Python 2.5 or later can be obtained from http://www.python.org
-simplejson can be found at https://github.com/simplejson/simplejson
+OWL Pipe uses the "ConfigObj" module together with the optional Validation code.
+It also requires a reasonably recent version of Python, likely 2.5 or later.
+Python or later can be obtained from http://www.python.org
+ConfigObj can be found at http://www.voidspace.org.uk/python/configobj.html but
+remember to download both configobj.py and validate.py or the .zip file which 
+contains both. Alternatively, download from PyPI (or by using easy_install).
 
 
 
@@ -68,14 +68,9 @@ should suffice.
 
 
 Configuration File Format
-The Pipeline and Stage definition files are written in JSON (http://json.org/) 
-with two main extensions for convenience sake:
-    1. Comments, starting with //.
-    2. Variable names without quotes.
-Comments start with a '//' and go to the end of the line. Standard JSON does not
-allow comments. Also contrary to standard JSON, variable names and dictionary 
-keys are not enclosed in double quotes. A pre-processing step transforms these 
-configuration files into valid JSON.
+The Pipeline and Stage definition files are written in INI format with some
+extensions such as the use of '#' to indicate comments or string interpolation 
+(see http://www.voidspace.org.uk/python/configobj.html#the-config-file-format).
 
 
 
