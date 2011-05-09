@@ -9,10 +9,11 @@ OWL Pipe allows developers to construct Python based scientific pipelines out of
 reusable code. The framework provides two useful containers: a Pipeline object 
 and a Stage object.
 
-A Pipeline is an ordered collection of Stages. Stages are typically atomic 
-operations performed on the data being processed by the Pipeline itself. As a
-simple example from basic astronomical processing, a Stage could be the bias
-subtraction step while a pipeline could be basic image detrending.
+A Pipeline is an ordered collection of Stages, where a Stage is some python code
+(that performs some part of the computation) and configuration data needed to 
+run that code.  As a simple example from basic astronomical processing, a Stage
+could perform the bias subtraction step while a pipeline could be basic image
+detrending.
 
 Pipelines in owl_pipe are built by creating an ASCII configuration file. That 
 file is where, among other things, the Stages forming that pipeline are defined.
