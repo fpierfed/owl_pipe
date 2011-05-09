@@ -89,15 +89,18 @@ def get_spec_file_path(stage_class):
     the Stage (sub)class and extension .spec.
     """
     stage_source_file = os.path.abspath(inspect.getfile(stage_class))
-    root = os.path.splitext(stage_source_file)[0]
-    return(root + '.spec')
+    
+    # Since `stage_class` could be defined in a file called whatever, we need 
+    # the source file basedir and the class name.
+    dir = os.path.dirname(stage_source_file)
+    return(os.path.join(dir, stage_class.__name__ + '.spec'))
 
 
 
 def find_spec_file(stage_class):
     """
-    Return True is a file named <stage_class.__name__>.spec exists in the same
-    director as <stage_class.__name__>.py. Return False otherwise.
+    Return the full path of the given Stage subclass `stage_class`, it it 
+    exists or None if it does not.
     """
     spec_file = get_spec_file_path(stage_class)
     if(os.path.exists(spec_file)):

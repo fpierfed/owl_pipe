@@ -75,7 +75,9 @@ class Stage(object):
         if(not stage_spec_file):
             pipeline.log.debug("No spec file for Stage %s." \
                                % (pipeline_config['name']))
-        
+        else:
+            pipeline.log.debug("Stage %s specfile: %s" \
+                               % (pipeline_config['name'], stage_spec_file))
         # Now do the actual parsing and, if we do have a spec file, validate as 
         # well.
         if(stage_config_file):

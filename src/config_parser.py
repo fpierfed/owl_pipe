@@ -77,9 +77,6 @@ def validated_parse(config_file, specfile):
         msg = "these sections are unknown: %s." % (', '.join(extra_sections))
         raise(ValidationError(msg))
     
-    
-    print(spec)
-    
     # Now, make sure that we do not have spurious stuff in each section.
     for section in spec.keys():
         config_section = config[section]
