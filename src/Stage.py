@@ -87,13 +87,6 @@ class Stage(object):
             input = stage_config.get('input_keys', {})
             output = stage_config.get('output_keys', {})
         
-        # Turn the keys in config to strings from unicode.
-        parameters = dict([(str(k), v) for (k, v) in parameters.items()])
-        input = dict([(str(k), (str(v1), str(v2))) 
-                      for (k, (v1, v2)) in input.items()])
-        output = dict([(str(k), (str(v1), str(v2))) 
-                      for (k, (v1, v2)) in output.items()])
-        
         # Now we have everything we need to create a Stage instance.
         return(stage_class(name=pipeline_config['name'], 
                            pipeline=pipeline,
@@ -158,13 +151,28 @@ class Stage(object):
         if(clipboard_check):
             self.log.debug('Checking clipboard output types.')
             
-            for (var_name, (key_name, class_name)) in self.output_info.items():
+            for (var_name, clipboard_info) in self.output_info.items():
+                # Clipboard_info is either a one or two element list. In the 
+                # first case, it is simply the name of the clipboard key. In the
+                # second case, it is the name of the key and the name of the 
+                # class of the data to be put in that key.
+                if(len(clipboard_info) == 2):
+                    [key_name, class_name] = clipboard_info
+                elif(len(clipboard_info) == 1):
+                    key_name = clipboard_info[0]
+                    print(var_name, clipboard_info)
+                    self.log.debug('No class info to validate %s.' % (key_name))
+                    continue
+                else:
+                    print(clipboard_info)
+                    raise(Exception('Malformed configuration file.'))
+                
                 # Now, var_name is just the name we should use internally and so
                 # it has no meaning outside of this instance. What we care about
                 # are the classes.
                 cls = utilities.import_class(class_name)
                 assert(isinstance(self.clipboard[key_name], cls))
-            self.log.debug('Clipboard output types are OK.')
+                self.log.debug('Clipboard %s type OK.' % (key_name))
         return(err)
     
     
