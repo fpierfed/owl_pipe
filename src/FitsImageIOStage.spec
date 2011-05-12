@@ -21,8 +21,3 @@
 
 
 
-[output_keys]
-    # Clipboard keys are indicated as 
-    #     <internal name>: <clipboard key name>[, <object type>]
-    exposure = string_list(min=1, max=2)
-    

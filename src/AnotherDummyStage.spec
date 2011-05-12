@@ -20,16 +20,3 @@
 
 
 
-[input_keys]
-    exposure = string_list(min=1, max=2)
-    exposure_bpm = string_list(min=1, max=2)
-    exposure_err = string_list(min=1, max=2)
-
-
-
-[output_keys]
-    # Clipboard keys are indicated as 
-    #     <internal name>: <clipboard key name>[, <object type>]
-    processed = string_list(min=1, max=2)
-    processed_bpm = string_list(min=1, max=2)
-    processed_err = string_list(min=1, max=2)

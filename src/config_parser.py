@@ -66,7 +66,7 @@ def validated_parse(config_file, specfile):
     Parse config_file, in INI format, and do validation with the provided 
     specfile.
     """
-    config = ConfigObj(config_file, configspec=specfile)
+    config = ConfigObj(config_file, configspec=specfile, raise_errors=True)
     spec = ConfigObj(specfile)
     validator = Validator()
     
@@ -91,45 +91,23 @@ def validated_parse(config_file, specfile):
     
     # Finally do the ConfigObj validation and hope that nothing happens.
     # No we do not because it does not work!
-#     ok = config.validate(validator)
-#     if(not ok):
-    # ConfigObj failed but there seems to be no way to know why reliably
-    # meaning that flatten_errors does not really work... let's check by 
-    # hand.
-    for section in spec.keys():
-        config_section = config[section]
-        spec_section = spec[section]
-        
-        # Repeat the validation.
-        for key in spec_section.keys():
-            try:
-                raw_value = config_section[key]
-            except KeyError:
-                # So, the key is not optional and it is not there: mistake!
-                msg = 'missing required %s key in section %s.' \
-                       % (key, section)
-                raise(ValidationError(msg))
-                
-            rule = spec_section[key]
-            if(isinstance(rule, list)):
-                rule = ' '.join(rule)
-            try:
-                parsed_value = validator.check(rule, raw_value)
-            except VdtTypeError:
-                 # Wrong type: mistake!
-                msg = '%s=%s in section %s does not satisfy rule %s.' \
-                       % (key, raw_value, section, rule)
-                raise(ValidationError(msg))
+    ok = config.validate(validator)
+    if(not ok):
+        raise(Exception('Unable to parse %s and validate against %s' \
+                        % (config_file, specfile)))
     
-    # And now, make sure that the values in inout_keys and output_keys are lists
-    # because, contrary to the docs, the validation step does not return lists
-    # if they only have one element :-(
-    input_keys = config.get('input_keys', {})
-    output_keys = config.get('output_keys', {})
-    for dct in (input_keys, output_keys):
-        for k in dct.keys():
-            if(isinstance(dct[k], str)):
-                dct[k] = [dct[k], ]
+    # Now, parse input and output in the Stage definition by hand.
+    if(config.has_key('pipeline')):
+        stage_configs =  config['pipeline']['stages']
+        for stage_name in stage_configs.keys():
+            stage_config = stage_configs[stage_name]
+            
+            input = [[xx.strip() for xx in x.split(',')] 
+                     for x in stage_config.get('input', [])]
+            stage_config['input'] = input
+            
+            output = [x.split(',') for x in stage_config.get('output', [])]
+            stage_config['output'] = output
     return(config)
 
 

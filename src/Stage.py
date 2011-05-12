@@ -84,14 +84,12 @@ class Stage(object):
             stage_config = config_parser.loads(stage_config_file, 
                                                specfile=stage_spec_file)
             parameters = stage_config.get('parameters', {})
-            input = stage_config.get('input_keys', {})
-            output = stage_config.get('output_keys', {})
         
         # Now we have everything we need to create a Stage instance.
         return(stage_class(name=pipeline_config['name'], 
                            pipeline=pipeline,
-                           input_info=input,
-                           output_info=output,
+                           input_info=pipeline_config.get('input', []),
+                           output_info=pipeline_config.get('output', []),
                            **parameters))
         
     
@@ -106,18 +104,18 @@ class Stage(object):
         self.input_info = input_info
         self.output_info = output_info
         
+        # Define the parameters inline.
         for (key, val) in kws.items():
             setattr(self, key, val)
         
-        # Get a hold of the clipboard.
-        self.clipboard = self.pipeline.clipboard
+        # Get a hold of the clipboard but keep it private.
+        self._clipboard = self.pipeline.clipboard
         
         # We need to create a a logger. We choose to reuse the same logger as 
         # self.pipeline but we just change its name to reflect self.name.
         logger = self.pipeline.log.logger
         extra = {'classname': self.qualified_name}
         self.log = logging.LoggerAdapter(logger, extra)
-        
         
         # Log the fact that we have been init-ed.
         self.log.info('%s instance created.' % (self.__class__.__name__))
@@ -126,54 +124,130 @@ class Stage(object):
     
     def run(self, clipboard_check=True):
         """
-        Do any work that we are supposed to do.
+        Do any work that we are supposed to do. Before doing the actual work 
+        though, grab whatever data is waiting for us in the clipboard and update
+        the relevant instance variables with those values. Once we are done 
+        processing, put the data back in the clipboard, creating new entries or
+        updating old entries as specified in self.output_info.
         """
         self.log.info('Stage %s starting.' % (self.name))
         
-        if(clipboard_check):
-            self.log.debug('Checking clipboard input types.')
-            
-            for (var_name, (key_name, class_name)) in self.input_info.items():
-                # Now, var_name is just the name we should use internally and so
-                # it has no meaning outside of this instance. What we care about
-                # are the classes.
-                cls = utilities.import_class(class_name)
-                assert(isinstance(self.clipboard[key_name], cls))
-            self.log.debug('Clipboard input types are OK.')
-        
+        # Populate self.inbox from the content of the clipboard. What to put 
+        # there is stored in self.input_info.
+        self._get_data_from_clipbaord(clipboard_check)
         
         # Run the Stage-specific code.
         err = self.process()
         self.log.info('Stage %s done (return value: %s).' \
                       % (self.name, str(err)))
         
-        
-        if(clipboard_check):
-            self.log.debug('Checking clipboard output types.')
-            
-            for (var_name, clipboard_info) in self.output_info.items():
-                # Clipboard_info is either a one or two element list. In the 
-                # first case, it is simply the name of the clipboard key. In the
-                # second case, it is the name of the key and the name of the 
-                # class of the data to be put in that key.
-                if(len(clipboard_info) == 2):
-                    [key_name, class_name] = clipboard_info
-                elif(len(clipboard_info) == 1):
-                    key_name = clipboard_info[0]
-                    print(var_name, clipboard_info)
-                    self.log.debug('No class info to validate %s.' % (key_name))
-                    continue
-                else:
-                    print(clipboard_info)
-                    raise(Exception('Malformed configuration file.'))
-                
-                # Now, var_name is just the name we should use internally and so
-                # it has no meaning outside of this instance. What we care about
-                # are the classes.
-                cls = utilities.import_class(class_name)
-                assert(isinstance(self.clipboard[key_name], cls))
-                self.log.debug('Clipboard %s type OK.' % (key_name))
+        # Now update the clipboard.
+        self._put_data_to_clipboard(clipboard_check)
         return(err)
+    
+    
+    
+    def _get_data_from_clipbaord(self, clipboard_check):
+        """
+        In the pipeline configuration, as part of the "stages" list, we have 
+        hints on which data each Stage produces and which data it consumes. In 
+        order to transfer these pieces of data in-memory between stages we have 
+        a simple architecture.
+        We have a dictionary at the Pipeline level where data is put and
+        possibly updated. This is the clipboard. Before executing each Stage, 
+        the data the Stage needs as input is put in instance variables whose 
+        name (and optionally type) are given in the input parameter of the 
+        stages section of the pipeline configuration. After the Stage completes,
+        instance variables of Stage (and defined in the output parameter of the 
+        same configuration block) are put in the clipboard.
+        """
+        for clipboard_info in self.input_info:
+            # clipboard_info is a tuple. It either has a single element, which 
+            # is the name of the clipboard key to fetch, or two elements: the
+            # clipboard key (same as before) and the corresponding object type
+            # for optional type checking (clipboard_check == True).
+            # Either way, put data in self.inbox in the order it is defined in
+            # self.input_info.
+            if(not utilities.islist_tuple(clipboard_info) or
+               not len(clipboard_info) in (0, 1, 2)):
+                raise(Exception('Stage %s: malformed inbox info %s.' \
+                                % (self.name, clipboard_info)))
+            if(not clipboard_info):
+                # Nothing to do.
+                continue
+            elif(len(clipboard_info) == 2):
+                    [key_name, class_name] = clipboard_info
+            elif(len(clipboard_info) == 1):
+                key_name = clipboard_info[0]
+                class_name = None
+            
+            # Populate self.inbox but check types first if we need to.
+            value = self._clipboard[key_name]
+            if(clipboard_check):
+                self.log.debug('Checking clipboard input types.')
+                if(not class_name):
+                    self.log.debug('No class information to do the check.')
+                else:
+                    cls = utilities.import_class(class_name)
+                    assert(isinstance(value, cls))
+                    self.log.debug('Clipboard input types are OK.')
+            
+            # Now create/update the instance variable.
+            setattr(self, key_name, value)
+        return
+    
+    
+    
+    def _put_data_to_clipboard(self, clipboard_check):
+        """
+        In the pipeline configuration, as part of the "stages" list, we have 
+        hints on which data each Stage produces and which data it consumes. In 
+        order to transfer these pieces of data in-memory between stages we have 
+        a simple architecture.
+        We have a dictionary at the Pipeline level where data is put and
+        possibly updated. This is the clipboard. Before executing each Stage, 
+        the data the Stage needs as input is put in instance variables whose 
+        name (and optionally type) are given in the input parameter of the 
+        stages section of the pipeline configuration. After the Stage completes,
+        instance variables of Stage (and defined in the output parameter of the 
+        same configuration block) are put in the clipboard.
+        """
+        for clipboard_info in self.output_info:
+            # clipboard_info is a tuple. It either has a single element, which 
+            # is the name of the clipboard key to fetch, or two elements: the
+            # clipboard key (same as before) and the corresponding object type
+            # for optional type checking (clipboard_check == True).
+            # Either way, put data in self.inbox in the order it is defined in
+            # self.input_info.
+            if(not (isinstance(clipboard_info, tuple) or 
+                    isinstance(clipboard_info, list)) or
+               not len(clipboard_info) in (0, 1, 2)):
+                raise(Exception('Stage %s: malformed output info %s.' \
+                                % (self.name, clipboard_info)))
+            if(not clipboard_info):
+                # Nothing to do.
+                continue
+            elif(len(clipboard_info) == 2):
+                    [key_name, class_name] = clipboard_info
+            elif(len(clipboard_info) == 1):
+                key_name = clipboard_info[0]
+                class_name = None
+            
+            # Fetch value from self.<key_name> but check types first if we need 
+            # to.
+            value = getattr(self, key_name)
+            if(clipboard_check):
+                self.log.debug('Checking clipboard output types.')
+                if(not class_name):
+                    self.log.debug('No class information to do the check.')
+                else:
+                    cls = utilities.import_class(class_name)
+                    assert(isinstance(value, cls))
+                    self.log.debug('Clipboard output types are OK.')
+            
+            # Now update the clipboard.
+            self._clipboard[key_name] = value
+        return
     
     
     def process(self):

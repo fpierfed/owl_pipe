@@ -32,8 +32,12 @@ Pipeline
 
 """
 import logging
+
+
 import config_parser
+import utilities
 from Stage import Stage
+
 
 
 
@@ -48,7 +52,14 @@ class Pipeline(object):
         `configFile` which specifies the Pipeline stages, data directories
         etc.
         """
-        parsed = config_parser.loads(config_file)['pipeline']
+        # Do we have a spec file? If so, do parameter and input/output key 
+        # validation as well. If not keep going.
+        spec_file = utilities.find_spec_file(cls)
+        
+        # Now do the actual parsing and, if we do have a spec file, validate as 
+        # well.
+        parsed = config_parser.loads(config_file, 
+                                     specfile=spec_file)['pipeline']
         
         # Create a Pipeline instance with no stages, we will add them later.
         pipe = cls(name=parsed['name'],
@@ -59,6 +70,18 @@ class Pipeline(object):
         # The only thing that requires special handling is the stages array. 
         # Here we have to create Stage instances of the appropriate class and
         # pass the appropriate Stage config file to them.
+        # Also, as part of the "stages" list, we have hints on which data each 
+        # Stage produces and which data it consumes. In order to transfer these
+        # pieces of data in-memory between stages we have a simple architecture.
+        # We have a dictionary at the Pipeline level where data is put and
+        # possibly updated. This is the clipboard. Then before executing each 
+        # Stage, the data the Stage needs in input is put in Stage.inbox which
+        # is a list. Elements are put in that list in the order they are defined
+        # in that Stage section of the Pipeline configuration file (inbox 
+        # parameter). After the Stage completes, data from Stage.outbox is 
+        # fetched and put in the clipboard. Data in Stage.outbox is assumed to 
+        # be in the order defined in that Stage section of the Pipeline 
+        # configuration file (outbox parameter).
         stages = [Stage.from_parsed_config(x, pipe) for x in parsed['stages']]
         
         # Finally update the pipe.stages list. We did this so that the Stage 
@@ -132,6 +155,12 @@ class Pipeline(object):
                 raise(Exception('Stage %s exited with error code %d' \
                       % (stage.name, error)))
         return
+    
 
+    
+    
+    
+    
+    
 
         

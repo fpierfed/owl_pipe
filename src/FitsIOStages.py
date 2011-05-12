@@ -49,16 +49,23 @@ class FitsImageIOStage(Stage):
         
         # Do we have several extensions, a data cube or a simple single 
         # extension?
+        processed = None
         if(len(hdus) == 1):
             # case 1 or 3: data cube or SIF.
             hdu = hdus[0]
             if(len(hdu.data.shape) > 2):
-                return(self.process_cube(image=hdu))
+                processed = self.process_cube(image=hdu)
             elif(len(hdu.data.shape) == 2):
-                return(self.process_sif(image=hdu))
-            raise(NotImplementedException('1-D images are not supported.'))
+                processed = self.process_sif(image=hdu)
+            else:
+                raise(NotImplementedError('1-D images are not supported.'))
         # Case 2: MEF.
-        return(self.process_mef(image=hdus))
+        else:
+            processed = self.process_mef(image=hdus)
+        
+        # Finally, create an instance variable to hold the result.
+        setattr(self, self.output_info[0][0], models.Image(processed))
+        return(0)
     
     
     def process_cube(self, image):
@@ -66,10 +73,7 @@ class FitsImageIOStage(Stage):
         Process a data cube.
         """
         self.log.info('Processing a data cube.')
-        
-        key_name = self.output_info['exposure'][0]
-        self.clipboard[key_name] = models.Image([image, ])
-        return(0)
+        return([image, ])
     
     
     def process_sif(self, image):
@@ -77,10 +81,7 @@ class FitsImageIOStage(Stage):
         Process a single-extension FITS file.
         """
         self.log.info('Processing a single-extension FITS file.')
-        
-        key_name = self.output_info['exposure'][0]
-        self.clipboard[key_name] = models.Image([image,])
-        return(0)
+        return([image, ])
     
     
     def process_mef(self, images):
@@ -88,10 +89,7 @@ class FitsImageIOStage(Stage):
         Process a multi-extension FITS file.
         """
         self.log.info('Processing a multi-extension FITS file.')
-        
-        key_name = self.output_info['exposure'][0]
-        self.clipboard[key_name] = models.Image(images)
-        return(0)
+        return(images)
 
 
 

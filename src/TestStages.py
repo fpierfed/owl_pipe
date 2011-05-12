@@ -35,19 +35,19 @@ import utilities
 class DummyInitStage(Stage):
     def process(self):
         # Handle self.output_info
-        for (var_name, (key_name, class_name)) in self.output_info.items():
+        for (var_name, class_name) in self.output_info:
             # Import class_name.
             cls = utilities.import_class(class_name)
             
             # Create a dummy instance of cls.
             dummy_object = cls()
             
-            # Write it in the clipboard.
-            self.clipboard[key_name] = dummy_object
+            # Write it in an instance variable.
+            setattr(self, var_name, dummy_object)
             
             # Log what we did.
-            self.log.info('Added a new instance of %s to the clipboard as %s.' \
-                          % (class_name, key_name))
+            self.log.info('Created a new instance of %s as %s.' \
+                          % (class_name, var_name))
         return(0)
 
 
@@ -63,25 +63,25 @@ class DummyStage(Stage):
 class AnotherDummyStage(Stage):
     def process(self):
         # Handle self.input_info
-        for (var_name, (key_name, class_name)) in self.input_info.items():
-            thing = self.clipboard[key_name]
+        for (var_name, class_name) in self.input_info:
+            thing = getattr(self, var_name)
             
             # Log what we found.
-            self.log.info('Found an instance of %s in the clipboard as %s' \
-                          % (thing.__class__.__name__, key_name))
+            self.log.info('Found an instance of %s as %s' \
+                          % (thing.__class__.__name__, var_name))
         
         # Handle self.output_info
-        for (var_name, (key_name, class_name)) in self.output_info.items():
+        for (var_name, class_name) in self.output_info:
             # Import class_name.
             cls = utilities.import_class(class_name)
             
             # Create a dummy instance of cls.
             dummy_object = cls()
             
-            # Write it in the clipboard.
-            self.clipboard[key_name] = dummy_object
+            # Write it as instance variable.
+            setattr(self, var_name, dummy_object)
             
             # Log what we did.
-            self.log.info('Added a new instance of %s to the clipboard.' \
-                          % (class_name))
+            self.log.info('Added a new instance of %s as %s.' \
+                          % (class_name, var_name))
         return(0)

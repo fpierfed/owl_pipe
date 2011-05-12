@@ -109,4 +109,8 @@ def find_spec_file(stage_class):
 
 
 
-
+def islist_tuple(obj):
+    """
+    Return True if `obj` is either a list or a tuple. False otherwise.
+    """
+    return(isinstance(obj, tuple) or isinstance(obj, list))
