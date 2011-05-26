@@ -33,14 +33,14 @@ from distutils.core import setup
 
 
 if __name__ == "__main__": 
-    setup(name = 'owl_pipe', 
-          description = "OWL Pipeline Framework", 
+    setup(name = 'stpipe', 
+          description = "ST Pipe Framework", 
           author = "Francesco Pierfederici", 
           author_email = "fpierfed@stsci.edu",
           license = "BSD",
           version='0.1',
           
-          packages=['owl_pipe', ],
-          package_dir={'owl_pipe': 'src'},
+          packages=['stpipe', ],
+          package_dir={'stpipe': 'src'},
 )
 

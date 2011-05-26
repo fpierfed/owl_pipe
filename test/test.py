@@ -28,7 +28,7 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from owl_pipe.Pipeline import Pipeline
+from stpipe.Pipeline import Pipeline
 
 
 
