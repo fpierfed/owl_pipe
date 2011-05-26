@@ -42,5 +42,6 @@ if __name__ == "__main__":
           
           packages=['stpipe', ],
           package_dir={'stpipe': 'src'},
+          package_data={'stpipe': ['*.spec', ]},
 )
 
