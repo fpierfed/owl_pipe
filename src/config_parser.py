@@ -97,17 +97,7 @@ def validated_parse(config_file, specfile):
                         % (config_file, specfile)))
     
     # Now, parse input and output in the Step definition by hand.
-    if(config.has_key('pipeline')):
-        step_configs =  config['pipeline']['steps']
-        for step_name in step_configs.keys():
-            step_config = step_configs[step_name]
-            
-            input = [[xx.strip() for xx in x.split(',')] 
-                     for x in step_config.get('input', [])]
-            step_config['input'] = input
-            
-            output = [x.split(',') for x in step_config.get('output', [])]
-            step_config['output'] = output
+    _step_io_fix(config)
     return(config)
 
 
@@ -116,10 +106,12 @@ def simple_parse(config_file):
     """
     Do simple parsing and home-brewed type interference.
     """
-    config = ConfigObj(config_file)
+    config = ConfigObj(config_file, raise_errors=True)
     config.walk(string_to_python_type)
+    
+    # Now, parse input and output in the Step definition by hand.
+    _step_io_fix(config)
     return(config)
-
 
 
 
@@ -171,6 +163,33 @@ def _parse(val):
 
 
 
+def _step_io_fix(config):
+    """
+    Parse input and output information in the Step definition by hand/ This 
+    means turning quoted lists into lists of strings. Modify `config` in place.
+    """
+    if(config.has_key('pipeline')):
+        step_configs =  config['pipeline']['steps']
+        for step_name in step_configs.keys():
+            step_config = step_configs[step_name]
+            
+            # Make sure that each Step input and output parameters, if present,
+            # are lists of strings and not strings. This should be done for us 
+            # by ConfogObj, but not in case where the user forgot to put a 
+            # trailing ',' after a one element list.
+            raw_input = step_config.get('input', [])
+            raw_output = step_config.get('output', [])
+            if(isinstance(raw_input, str) or isinstance(raw_input, unicode)):
+                raw_input = [raw_input, ]
+            if(isinstance(raw_output, str) or isinstance(raw_output, unicode)):
+                raw_output = [raw_output, ]
+            
+            input = [[xx.strip() for xx in x.split(',')] for x in raw_input]
+            step_config['input'] = input
+            
+            output = [[xx.strip() for xx in x.split(',')] for x in raw_output]
+            step_config['output'] = output
+    return
 
 
 
