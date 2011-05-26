@@ -1,55 +1,54 @@
-OWL Pipe
+STPipe
 
-OWL Pipe is a light-weight Pipeline framework. It is implemented as a Python 
-module called owl_pipe with no dependencies other than a reasonably recent 
-version of Python (see below for further information). It is either called "OWL 
-Pipe" or owl_pipe. The two names are used interchangeably in this document.
+STPipe is a light-weight Pipeline framework. It is implemented as a Python 
+module called stpipe with no dependencies other than a reasonably recent 
+version of Python (see below for further information) and ConfigObj (with the 
+optional verify.py module). It is either called "OWL Pipe" or stpipe. The two 
+names are used interchangeably in this document.
 
-OWL Pipe allows developers to construct Python based scientific pipelines out of
+STPipe allows developers to construct Python-based scientific pipelines out of
 reusable code. The framework provides two useful containers: a Pipeline object 
-and a Stage object.
+and a Step object.
 
-A Pipeline is an ordered collection of Stages, where a Stage is some python code
+A Pipeline is an ordered collection of Steps, where a Step is some python code
 (that performs some part of the computation) and configuration data needed to 
-run that code.  As a simple example from basic astronomical processing, a Stage
-could perform the bias subtraction step while a pipeline could be basic image
-detrending.
+run that code.  As a simple example from basic astronomical processing, a Step
+could perform bias subtraction while a pipeline could be basic image detrending.
 
-Pipelines in owl_pipe are built by creating an ASCII configuration file. That 
-file is where, among other things, the Stages forming that pipeline are defined.
-Each Stage has a separate configuration file where parameters and I/O 
-information for that Stage can be specified.
+Pipelines in stpipe are built by creating an ASCII configuration file. That 
+file is where, among other things, the Steps forming that pipeline (and their 
+input and outputs) are defined.
+Each Step has a separate configuration file where its parameters can be 
+specified.
 
-Both Pipeline and Stage instances have access to some instance variables:
+Both Pipeline and Step instances have access to some instance variables:
     1. log: a Logger instance from the Python logging module.
-    2. clipboard: a dictionary for passing data in-memory across Stages (see 
-       below)
-    3. qualified_name: fully qualified name, mostly used in logs. For Pipeline
-       instances it is <system>.<name>. For Stage instances it is 
+    2. qualified_name: fully qualified name, mostly used in logs. For Pipeline
+       instances it is <system>.<name>. For Step instances it is 
        <pipeline qualified_name>.<name>.
-    4. name: the Pipeline/Stage name.
+    3. name: the Pipeline/Step name.
 Pipeline instances have these additional instance variables:
     1. system: the name of the Pipeline system.
     2. log_level: the log threshold.
     3. local_logs: boolean determining whether to write logs to disk or STDOUT.
-    4. stages: list of Stage instances for that Pipeline.
-Stage instances have these additional instance variables:
-    1. pipeline: the Pipeline instance the Stage belongs to.
-    2. input_info: a dictionary corresponding to the input dictionary in the
-       Stage configuration file (see below).
-    3. output_info: a dictionary corresponding to the output dictionary in the
-       Stage configuration file (see below).
-    4. Any parameter defined in the parameters dictionary in the Stage 
+    4. steps: list of Step instances for that Pipeline.
+    5. clipboard: a dictionary for passing data in-memory across Steps (see 
+       below).
+Step instances have these additional instance variables:
+    1. pipeline: the Pipeline instance the Step belongs to.
+    2. Any parameter defined in the parameters dictionary in the Step 
        configuration file (see below).
+    3. Any input/output containers defined in the main Pipeline configuration 
+       file (see below).
 
-Clearly, OWL Pipe stands on the shoulder of giants, among which NOAO NHPPS and 
+Clearly, STPipe stands on the shoulder of giants, among which NOAO NHPPS and 
 LSST pex_harness. As such it borrows features and ideas from its predecessors
 quite heavily.
 
 
 
 Requirements
-OWL Pipe uses the "ConfigObj" module together with the optional Validation code.
+STPipe uses the "ConfigObj" module together with the optional Validation code.
 It also requires a reasonably recent version of Python, likely 2.5 or later.
 Python or later can be obtained from http://www.python.org
 ConfigObj can be found at http://www.voidspace.org.uk/python/configobj.html but
@@ -69,25 +68,26 @@ should suffice.
 
 
 Configuration File Format
-The Pipeline and Stage definition files are written in INI format with some
-extensions such as the use of '#' to indicate comments or string interpolation 
+The Pipeline and Step definition files are written in INI format with some
+extensions from ConfigObj (e.g. the use of '#' to indicate comments, string 
+interpolation etc.) 
 (see http://www.voidspace.org.uk/python/configobj.html#the-config-file-format).
 
 
 
 Pipeline Definition File Structure
-Required high level dictionaries:
-    1. Pipeline
+Required high level sections:
+    1. pipeline
 
-Optional high level dictionaries:
+Optional high level sections:
     None
 
-The Pipeline dictionary
+The pipeline section
 Required keys:
     1. name: the name of the Pipeline, can be anything and is only used in logs.
     2. system: the name of the pipeline system. Again it can be anything and
        is only used in logs to group pipelines together.
-    3. stages: a list of dictionaries, each one defining a Stage (see below).
+    3. steps: a list of sections, each one defining a Step (see below).
 Optional keys:
     1. log_level: if present, it must be one of the log levels defined by the
        Python logging module. It defaults to "DEBUG".
@@ -95,53 +95,40 @@ Optional keys:
        local directory as <system>.<name>.log. If false, log messages are 
        written to STDOUT. It defaults to false.
 
-Dictionaries in the stages list
+Sections in the steps list (the section name is the name of the Pipeline Step it
+is referring to)
 Required keys:
-    1. name: the name of the Stage instance. Can be anything and is only used in
-       logs.
-    2. config_file: the path to the Stage configuration file (see below).
-    3. python_class: the fully qualified name of the Python class to instantiate
-       for the Stage.
+    1. config_file: the path to the Step configuration file (see below).
+    2. python_class: the fully qualified name of the Python class to instantiate
+       for the Step.
 Optional keys:
+    1. input: a comma separated, list of strings enclosed in double quotes. Each
+       string is itself a comma separated two element list of variable name and
+       corresponding object class name. The object class name can be omitted if
+       type validation is not needed. The Step instance will have these instance
+       variables defined and pre-populated (from the Pipeline clipboard).
+    2. output: a comma separated, list of strings enclosed in double quotes. 
+       Each string is itself a comma separated two element list of variable name
+       and corresponding object class name. The object class name can be omitted
+       if type validation is not needed. The Step instance will have these 
+       instance variables defined but not pre-populated. It is the 
+       responsibility of the Step code to assign values to them so that STPipe
+       can pass them to subsequent Steps can consume them.
+
+
+
+Step Configuration File Structure
+Required high level sections:
     None
 
-
-
-Stage Configuration File Structure
-Required high level dictionaries:
-    None
-
-Optional high level dictionaries:
+Optional high level sections:
     1. parameters
-    2. input
-    3. output
 
-The parameters dictionary
+The parameters section
 Required keys:
     None
 Optional keys:
-    1. Parameter name: parameter value. The Stage instance will have access to 
+    1. Parameter name = parameter value. The Step instance will have access to 
        parameters by name directly (i.e. as instance variables of the 
-       appropriate type, accessed using the usual Python self. notation). Only
-       simple JSON types are supported (i.e. int, float, bool, str).
-
-The input dictionary
-Required keys:
-    None
-Optional keys:
-    1. Name of clipboard keys holding input data for the Stage instance. The 
-       corresponding value is the fully qualified name of a Python class. The
-       Stage instance will check at run time that the clipboard object 
-       corresponding to this key is indeed an instance of that Python class.
-
-The output dictionary
-Required keys:
-    None
-Optional keys:
-    1. Name of clipboard keys holding output data for the Stage instance. The 
-       corresponding value is the fully qualified name of a Python class. The
-       Stage instance will check at run time that the object to put on the 
-       clipboard at that key is indeed an instance of that Python class.
-
-
+       appropriate type, accessed using the usual Python self. notation).
 
