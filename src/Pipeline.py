@@ -36,7 +36,7 @@ import logging
 
 import config_parser
 import utilities
-from Stage import Stage
+from Step import Step
 
 
 
@@ -49,7 +49,7 @@ class Pipeline(object):
     def from_config_file(cls, config_file):
         """
         Create a Pipeline instance from a JSON configuration file 
-        `configFile` which specifies the Pipeline stages, data directories
+        `configFile` which specifies the Pipeline steps, data directories
         etc.
         """
         # Do we have a spec file? If so, do parameter and input/output key 
@@ -61,33 +61,33 @@ class Pipeline(object):
         parsed = config_parser.loads(config_file, 
                                      specfile=spec_file)['pipeline']
         
-        # Create a Pipeline instance with no stages, we will add them later.
+        # Create a Pipeline instance with no steps, we will add them later.
         pipe = cls(name=parsed['name'],
                    system=parsed['system'],
                    log_level=parsed.get('log_level', 'DEBUG'),
                    local_logs=parsed.get('local_log_mode', False))
         
-        # The only thing that requires special handling is the stages array. 
-        # Here we have to create Stage instances of the appropriate class and
-        # pass the appropriate Stage config file to them.
-        # Also, as part of the "stages" list, we have hints on which data each 
-        # Stage produces and which data it consumes. In order to transfer these
-        # pieces of data in-memory between stages we have a simple architecture.
+        # The only thing that requires special handling is the steps array. 
+        # Here we have to create Step instances of the appropriate class and
+        # pass the appropriate Step config file to them.
+        # Also, as part of the "steps" list, we have hints on which data each 
+        # Step produces and which data it consumes. In order to transfer these
+        # pieces of data in-memory between steps we have a simple architecture.
         # We have a dictionary at the Pipeline level where data is put and
         # possibly updated. This is the clipboard. Then before executing each 
-        # Stage, the data the Stage needs in input is put in Stage.inbox which
+        # Step, the data the Step needs in input is put in Step.inbox which
         # is a list. Elements are put in that list in the order they are defined
-        # in that Stage section of the Pipeline configuration file (inbox 
-        # parameter). After the Stage completes, data from Stage.outbox is 
-        # fetched and put in the clipboard. Data in Stage.outbox is assumed to 
-        # be in the order defined in that Stage section of the Pipeline 
+        # in that Step section of the Pipeline configuration file (inbox 
+        # parameter). After the Step completes, data from Step.outbox is 
+        # fetched and put in the clipboard. Data in Step.outbox is assumed to 
+        # be in the order defined in that Step section of the Pipeline 
         # configuration file (outbox parameter).
-        stages = [Stage.from_parsed_config(x, pipe) for x in parsed['stages']]
+        steps = [Step.from_parsed_config(x, pipe) for x in parsed['steps']]
         
-        # Finally update the pipe.stages list. We did this so that the Stage 
+        # Finally update the pipe.steps list. We did this so that the Step 
         # instances could make use in their initialization, of whatever they
         # needed to pull from the Pipeline object they belong to.
-        pipe.configure(stages)
+        pipe.configure(steps)
         return(pipe)
         
     
@@ -100,12 +100,12 @@ class Pipeline(object):
         self.qualified_name = '%s.%s' % (self.system, self.name)
         self.log_level = getattr(logging, log_level)
         self.local_logs = local_logs
-        self.stages = []
+        self.steps = []
         # The clipboard is a dictionary for input and output data (consumed and
-        # produced by Stages). Stages get items from the clipboard, work on 
+        # produced by Steps). Steps get items from the clipboard, work on 
         # them and then put their products back in the clipboard. What to
-        # get from the clipboard is defined in the Stage configuration file in 
-        # the input_keys dictionary. What to put back is defined in the Stage 
+        # get from the clipboard is defined in the Step configuration file in 
+        # the input_keys dictionary. What to put back is defined in the Step 
         # configuration file, in the output_keys dictionary.
         self.clipboard = {}
         
@@ -132,28 +132,28 @@ class Pipeline(object):
         return
     
     
-    def configure(self, stages):
+    def configure(self, steps):
         """
-        Configure the Pipeline instance by assigining a list of Stages to it.
-        Do any further config needed once the Stages have themselves been 
+        Configure the Pipeline instance by assigining a list of Steps to it.
+        Do any further config needed once the Steps have themselves been 
         initialized.
         """
-        self.stages = stages
+        self.steps = steps
         
-        self.log.info('Pipeline configured and stages added.')
+        self.log.info('Pipeline configured and steps added.')
         return
     
     
     def run(self):
         """
-        Execute each Stage in self.stages in turn and ten exit.
+        Execute each Step in self.steps in turn and ten exit.
         """
-        for stage in self.stages:
-            self.log.info('Starting Stage %s' % (stage.name))
-            error = stage.run()
+        for step in self.steps:
+            self.log.info('Starting Step %s' % (step.name))
+            error = step.run()
             if(error):
-                raise(Exception('Stage %s exited with error code %d' \
-                      % (stage.name, error)))
+                raise(Exception('Step %s exited with error code %d' \
+                      % (step.name, error)))
         return
     
 

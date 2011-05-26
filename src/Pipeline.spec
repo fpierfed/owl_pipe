@@ -19,8 +19,8 @@
     # the work directory. Otherwise they are printed to STDOUT only.
     local_log_mode = boolean(default=False)
     
-    # Now the stage definitions, in order of execution.
-    [[stages]]
+    # Now the step definitions, in order of execution.
+    [[steps]]
         [[[__many__]]]
         config_file = string()
         python_class = string()

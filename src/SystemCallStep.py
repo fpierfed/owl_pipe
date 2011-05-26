@@ -29,17 +29,17 @@
 import subprocess
 import traceback
 
-from Stage import Stage
+from Step import Step
 
 
 
 
 
-class SystemCallStage(Stage):
+class SystemCallStep(Step):
     """
     Execute the command given in the configuration file in a system call and
     potentially log the command STDOUT and/or STDERR. If requested, the exit 
-    code of the Stage process method is that of the command being executed. 
+    code of the Step process method is that of the command being executed. 
     Otherwise it is whether or not the system call itself suceeded.
     """
     def process(self):

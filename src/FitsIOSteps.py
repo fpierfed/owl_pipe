@@ -26,7 +26,7 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-from Stage import Stage
+from Step import Step
 import models
 
 import pyfits
@@ -36,7 +36,7 @@ from pyfits.core import PrimaryHDU, TableHDU
 
 
 
-class FitsImageIOStage(Stage):
+class FitsImageIOStep(Step):
     """
     Read/write images in FITS format using PyFITS.
     """

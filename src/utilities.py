@@ -69,40 +69,40 @@ def import_class(full_name, subclassof=None):
     #      already the Python class we want.
     # Is imported a module?
     if(isinstance(imported, type(sys))):
-        stage_class = getattr(imported, class_name)
+        step_class = getattr(imported, class_name)
     else:
-        stage_class = imported
+        step_class = imported
     
-    if(subclassof and not issubclass(stage_class, subclassof)):
+    if(subclassof and not issubclass(step_class, subclassof)):
         msg = 'Class %s from package %s is not a subclass of %s' \
               % (class_name, package_name, subclassof.__name__)
         raise(NotImplementedError(msg))
-    return(stage_class)
+    return(step_class)
 
 
 
-def get_spec_file_path(stage_class):
+def get_spec_file_path(step_class):
     """
-    Given a Stage (sub)class, divine and return the full path to the 
+    Given a STep (sub)class, divine and return the full path to the 
     corresponding spec file. Use the fact that by convention, the spec file is 
-    in the same directory as the `stage_class` source file. It has the name of 
-    the Stage (sub)class and extension .spec.
+    in the same directory as the `step_class` source file. It has the name of 
+    the Step (sub)class and extension .spec.
     """
-    stage_source_file = os.path.abspath(inspect.getfile(stage_class))
+    step_source_file = os.path.abspath(inspect.getfile(step_class))
     
-    # Since `stage_class` could be defined in a file called whatever, we need 
+    # Since `step_class` could be defined in a file called whatever, we need 
     # the source file basedir and the class name.
-    dir = os.path.dirname(stage_source_file)
-    return(os.path.join(dir, stage_class.__name__ + '.spec'))
+    dir = os.path.dirname(step_source_file)
+    return(os.path.join(dir, step_class.__name__ + '.spec'))
 
 
 
-def find_spec_file(stage_class):
+def find_spec_file(step_class):
     """
-    Return the full path of the given Stage subclass `stage_class`, it it 
+    Return the full path of the given Step subclass `step_class`, it it 
     exists or None if it does not.
     """
-    spec_file = get_spec_file_path(stage_class)
+    spec_file = get_spec_file_path(step_class)
     if(os.path.exists(spec_file)):
         return(spec_file)
     return

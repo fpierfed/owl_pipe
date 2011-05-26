@@ -27,7 +27,7 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 """
-Stage
+Step
 
 
 """
@@ -39,54 +39,54 @@ import utilities
 
 
 
-class Stage(object):
+class Step(object):
     """
-    Stage
+    Step
     """
     @classmethod
     def from_parsed_config(cls, pipeline_config, pipeline):
         """
-        Create a Stage instance from a JSON configuration file 
-        `configFile` which specifies the Stage stages, data directories
+        Create a Step instance from a JSON configuration file 
+        `configFile` which specifies the Step steps, data directories
         etc.
         
         If a sile called <self.name>.spec is found in the same directory as the
-        Stage class source code, then the configuration file is validated 
+        Step class source code, then the configuration file is validated 
         against the spec file.
         """
-        # First understand which Stage (sub)class we need to instantiate. The 
+        # First understand which Step (sub)class we need to instantiate. The 
         # class name is given in full Python package notation, e.g.
         #   package.subPackage.subsubpackage.className
         # this means that
         #   1. We HAVE to be able to say 
         #       from package.subPackage.subsubpackage import className
-        #   2. The resulting Python class MUST be a subclass of Stage.
-        stage_class = utilities.import_class(pipeline_config['python_class'],
+        #   2. The resulting Python class MUST be a subclass of Step.
+        step_class = utilities.import_class(pipeline_config['python_class'],
                                              subclassof=cls)
         
-        # Now, we have the right Python class for our Stage, we just need to
+        # Now, we have the right Python class for our Step, we just need to
         # get to the corresponding config file and we are done.
-        stage_config = {}
-        stage_config_file = pipeline_config.get('config_file', None)
+        step_config = {}
+        step_config_file = pipeline_config.get('config_file', None)
         
         # Do we have a spec file? If so, do parameter and input/output key 
         # validation as well. If not keep going.
-        stage_spec_file = utilities.find_spec_file(stage_class)
-        if(not stage_spec_file):
-            pipeline.log.debug("No spec file for Stage %s." \
+        step_spec_file = utilities.find_spec_file(step_class)
+        if(not step_spec_file):
+            pipeline.log.debug("No spec file for Step %s." \
                                % (pipeline_config['name']))
         else:
-            pipeline.log.debug("Stage %s specfile: %s" \
-                               % (pipeline_config['name'], stage_spec_file))
+            pipeline.log.debug("Step %s specfile: %s" \
+                               % (pipeline_config['name'], step_spec_file))
         # Now do the actual parsing and, if we do have a spec file, validate as 
         # well.
-        if(stage_config_file):
-            stage_config = config_parser.loads(stage_config_file, 
-                                               specfile=stage_spec_file)
-            parameters = stage_config.get('parameters', {})
+        if(step_config_file):
+            step_config = config_parser.loads(step_config_file, 
+                                               specfile=step_spec_file)
+            parameters = step_config.get('parameters', {})
         
-        # Now we have everything we need to create a Stage instance.
-        return(stage_class(name=pipeline_config['name'], 
+        # Now we have everything we need to create a Step instance.
+        return(step_class(name=pipeline_config['name'], 
                            pipeline=pipeline,
                            input_info=pipeline_config.get('input', []),
                            output_info=pipeline_config.get('output', []),
@@ -95,7 +95,7 @@ class Stage(object):
     
     def __init__(self, name, pipeline, input_info, output_info, **kws):
         """
-        Configure the Stage instance.
+        Configure the Step instance.
         """
         self.name = name
         self.pipeline = pipeline
@@ -130,15 +130,15 @@ class Stage(object):
         processing, put the data back in the clipboard, creating new entries or
         updating old entries as specified in self.output_info.
         """
-        self.log.info('Stage %s starting.' % (self.name))
+        self.log.info('Step %s starting.' % (self.name))
         
         # Populate self.inbox from the content of the clipboard. What to put 
         # there is stored in self.input_info.
         self._get_data_from_clipbaord(clipboard_check)
         
-        # Run the Stage-specific code.
+        # Run the Step-specific code.
         err = self.process()
-        self.log.info('Stage %s done (return value: %s).' \
+        self.log.info('Step %s done (return value: %s).' \
                       % (self.name, str(err)))
         
         # Now update the clipboard.
@@ -149,16 +149,16 @@ class Stage(object):
     
     def _get_data_from_clipbaord(self, clipboard_check):
         """
-        In the pipeline configuration, as part of the "stages" list, we have 
-        hints on which data each Stage produces and which data it consumes. In 
-        order to transfer these pieces of data in-memory between stages we have 
+        In the pipeline configuration, as part of the "steps" list, we have 
+        hints on which data each Step produces and which data it consumes. In 
+        order to transfer these pieces of data in-memory between steps we have 
         a simple architecture.
         We have a dictionary at the Pipeline level where data is put and
-        possibly updated. This is the clipboard. Before executing each Stage, 
-        the data the Stage needs as input is put in instance variables whose 
+        possibly updated. This is the clipboard. Before executing each Step, 
+        the data the Step needs as input is put in instance variables whose 
         name (and optionally type) are given in the input parameter of the 
-        stages section of the pipeline configuration. After the Stage completes,
-        instance variables of Stage (and defined in the output parameter of the 
+        steps section of the pipeline configuration. After the Step completes,
+        instance variables of Step (and defined in the output parameter of the 
         same configuration block) are put in the clipboard.
         """
         for clipboard_info in self.input_info:
@@ -170,7 +170,7 @@ class Stage(object):
             # self.input_info.
             if(not utilities.islist_tuple(clipboard_info) or
                not len(clipboard_info) in (0, 1, 2)):
-                raise(Exception('Stage %s: malformed inbox info %s.' \
+                raise(Exception('Step %s: malformed inbox info %s.' \
                                 % (self.name, clipboard_info)))
             if(not clipboard_info):
                 # Nothing to do.
@@ -200,16 +200,16 @@ class Stage(object):
     
     def _put_data_to_clipboard(self, clipboard_check):
         """
-        In the pipeline configuration, as part of the "stages" list, we have 
-        hints on which data each Stage produces and which data it consumes. In 
-        order to transfer these pieces of data in-memory between stages we have 
+        In the pipeline configuration, as part of the "steps" list, we have 
+        hints on which data each Step produces and which data it consumes. In 
+        order to transfer these pieces of data in-memory between steps we have 
         a simple architecture.
         We have a dictionary at the Pipeline level where data is put and
-        possibly updated. This is the clipboard. Before executing each Stage, 
-        the data the Stage needs as input is put in instance variables whose 
+        possibly updated. This is the clipboard. Before executing each Step, 
+        the data the Step needs as input is put in instance variables whose 
         name (and optionally type) are given in the input parameter of the 
-        stages section of the pipeline configuration. After the Stage completes,
-        instance variables of Stage (and defined in the output parameter of the 
+        steps section of the pipeline configuration. After the Step completes,
+        instance variables of Step (and defined in the output parameter of the 
         same configuration block) are put in the clipboard.
         """
         for clipboard_info in self.output_info:
@@ -222,7 +222,7 @@ class Stage(object):
             if(not (isinstance(clipboard_info, tuple) or 
                     isinstance(clipboard_info, list)) or
                not len(clipboard_info) in (0, 1, 2)):
-                raise(Exception('Stage %s: malformed output info %s.' \
+                raise(Exception('Step %s: malformed output info %s.' \
                                 % (self.name, clipboard_info)))
             if(not clipboard_info):
                 # Nothing to do.
@@ -252,11 +252,11 @@ class Stage(object):
     
     def process(self):
         """
-        This is where real work happens. Every Stage subclass has to override
+        This is where real work happens. Every Step subclass has to override
         this method. The default behaviour is to raise a NotImplementedError
         exception.
         """
-        raise(NotImplementedError('Stages have to override process().'))
+        raise(NotImplementedError('Steps have to override process().'))
 
 
 

@@ -52,8 +52,8 @@ def loads(config_file, specfile=None):
     else:
         config = validated_parse(config_file, specfile)
     
-    # Add a 'name' key to each of the 'stages' dictionaries and set its value to
-    # the corresponding key in the original 'stages' entry. This only if we are 
+    # Add a 'name' key to each of the 'steps' dictionaries and set its value to
+    # the corresponding key in the original 'steps' entry. This only if we are 
     # parsing a pipeline config file, that is. Kind of messy :-(
     if(config.has_key('pipeline')):
         return(_pipeline_config_fix(config))
@@ -70,7 +70,7 @@ def validated_parse(config_file, specfile):
     spec = ConfigObj(specfile)
     validator = Validator()
     
-    # First validation: make sure that stage_config does not have any spurious
+    # First validation: make sure that step_config does not have any spurious
     # section.
     extra_sections = [s for s in config.keys() if s not in spec.keys()]
     if(extra_sections):
@@ -96,18 +96,18 @@ def validated_parse(config_file, specfile):
         raise(Exception('Unable to parse %s and validate against %s' \
                         % (config_file, specfile)))
     
-    # Now, parse input and output in the Stage definition by hand.
+    # Now, parse input and output in the Step definition by hand.
     if(config.has_key('pipeline')):
-        stage_configs =  config['pipeline']['stages']
-        for stage_name in stage_configs.keys():
-            stage_config = stage_configs[stage_name]
+        step_configs =  config['pipeline']['steps']
+        for step_name in step_configs.keys():
+            step_config = step_configs[step_name]
             
             input = [[xx.strip() for xx in x.split(',')] 
-                     for x in stage_config.get('input', [])]
-            stage_config['input'] = input
+                     for x in step_config.get('input', [])]
+            step_config['input'] = input
             
-            output = [x.split(',') for x in stage_config.get('output', [])]
-            stage_config['output'] = output
+            output = [x.split(',') for x in step_config.get('output', [])]
+            step_config['output'] = output
     return(config)
 
 
@@ -125,13 +125,13 @@ def simple_parse(config_file):
 
 def _pipeline_config_fix(config):
     """
-    Add a 'name' key to each of the 'stages' dictionaries and set its value to
-    the corresponding key in the original 'stages' entry. This only if we are 
+    Add a 'name' key to each of the 'steps' dictionaries and set its value to
+    the corresponding key in the original 'steps' entry. This only if we are 
     parsing a pipeline config file, that is. Kind of messy :-(
     """
-    for stage_name in config['pipeline']['stages']:
-        config['pipeline']['stages'][stage_name]['name'] = stage_name
-    config['pipeline']['stages'] = config['pipeline']['stages'].values()
+    for step_name in config['pipeline']['steps']:
+        config['pipeline']['steps'][step_name]['name'] = step_name
+    config['pipeline']['steps'] = config['pipeline']['steps'].values()
     return(config)
 
 

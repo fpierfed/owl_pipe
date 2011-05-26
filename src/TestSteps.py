@@ -26,13 +26,13 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-from Stage import Stage
+from Step import Step
 import utilities
 
 
 
 
-class DummyInitStage(Stage):
+class DummyInitStep(Step):
     def process(self):
         # Handle self.output_info
         for (var_name, class_name) in self.output_info:
@@ -52,7 +52,7 @@ class DummyInitStage(Stage):
 
 
 
-class DummyStage(Stage):
+class DummyStep(Step):
     def process(self):
         # Do nothing.
         self.log.info('So lazy, so lazy....')
@@ -60,7 +60,7 @@ class DummyStage(Stage):
 
 
 
-class AnotherDummyStage(Stage):
+class AnotherDummyStep(Step):
     def process(self):
         # Handle self.input_info
         for (var_name, class_name) in self.input_info:
