@@ -1,5 +1,16 @@
 STPipe
 
+
+WARNING
+
+STPipe (formerly known as owl_pipe) is being moved to
+
+https://svn6.assembla.com/svn/jwst/trunk/stpipe/
+
+please update your bookmarks.
+
+
+
 STPipe is a light-weight Pipeline framework. It is implemented as a Python 
 module called stpipe with no dependencies other than a reasonably recent 
 version of Python (see below for further information) and ConfigObj (with the 
