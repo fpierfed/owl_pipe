@@ -28,11 +28,11 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from stpipe.Pipeline import Pipeline
+from stpipe.convenience import pipeline_from_config_file
 
 
 
-pipe = Pipeline.from_config_file('pipeline.cfg')
+pipe = pipeline_from_config_file('pipeline.cfg')
 pipe.run()
 
 
