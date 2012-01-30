@@ -36,8 +36,17 @@ import logging
 
 import config_parser
 import utilities
-from Step import Step
 
+
+
+
+
+
+# Constants/Default Values.
+DEFAULT_PIPELINE_NAME = 'DefaultPipeline'
+DEFAULT_SYSTEM_NAME = 'DefaultSystem'
+DEFAULT_LOG_LEVEL = 'DEBUG'
+DEFAULT_LOCAL_LOGS = False
 
 
 
@@ -45,53 +54,11 @@ class Pipeline(object):
     """
     Pipeline
     """
-    @classmethod
-    def from_config_file(cls, config_file):
-        """
-        Create a Pipeline instance from a JSON configuration file 
-        `configFile` which specifies the Pipeline steps, data directories
-        etc.
-        """
-        # Do we have a spec file? If so, do parameter and input/output key 
-        # validation as well. If not keep going.
-        spec_file = utilities.find_spec_file(cls)
-        
-        # Now do the actual parsing and, if we do have a spec file, validate as 
-        # well.
-        parsed = config_parser.loads(config_file, 
-                                     specfile=spec_file)['pipeline']
-        
-        # Create a Pipeline instance with no steps, we will add them later.
-        pipe = cls(name=parsed['name'],
-                   system=parsed['system'],
-                   log_level=parsed.get('log_level', 'DEBUG'),
-                   local_logs=parsed.get('local_log_mode', False))
-        
-        # The only thing that requires special handling is the steps array. 
-        # Here we have to create Step instances of the appropriate class and
-        # pass the appropriate Step config file to them.
-        # Also, as part of the "steps" list, we have hints on which data each 
-        # Step produces and which data it consumes. In order to transfer these
-        # pieces of data in-memory between steps we have a simple architecture.
-        # We have a dictionary at the Pipeline level where data is put and
-        # possibly updated. This is the clipboard. Then before executing each 
-        # Step, the data the Step needs in input is put in Step.inbox which
-        # is a list. Elements are put in that list in the order they are defined
-        # in that Step section of the Pipeline configuration file (inbox 
-        # parameter). After the Step completes, data from Step.outbox is 
-        # fetched and put in the clipboard. Data in Step.outbox is assumed to 
-        # be in the order defined in that Step section of the Pipeline 
-        # configuration file (outbox parameter).
-        steps = [Step.from_parsed_config(x, pipe) for x in parsed['steps']]
-        
-        # Finally update the pipe.steps list. We did this so that the Step 
-        # instances could make use in their initialization, of whatever they
-        # needed to pull from the Pipeline object they belong to.
-        pipe.configure(steps)
-        return(pipe)
-        
-    
-    def __init__(self, name, system, log_level, local_logs):
+    def __init__(self, 
+                 name=DEFAULT_PIPELINE_NAME, 
+                 system=DEFAULT_SYSTEM_NAME, 
+                 log_level=DEFAULT_LOG_LEVEL, 
+                 local_logs=DEFAULT_LOCAL_LOGS):
         """
         Configure the Pipeline instance.
         """
