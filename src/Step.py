@@ -35,6 +35,23 @@ import logging
 
 import config_parser
 import utilities
+from stpipe import DEFAULT_PIPELINE
+
+
+
+
+class StepType(type):
+    """
+    Simple metaclass to monkeypatch Step and its subclasses: replace __call__
+    with whatever the (sub)class run method is (only useful for when users 
+    create Steps manually without going through a Pipeline class and its 
+    configuration file).
+    """
+    def __new__(cls, name, bases, attrs):
+        if('run_standalone' in attrs.keys()):
+            attrs['__call__'] = attrs['run_standalone']
+        return(super(StepType, cls).__new__(cls, name, bases, attrs))
+
 
 
 
@@ -43,15 +60,17 @@ class Step(object):
     """
     Step
     """
+    __metaclass__ = StepType
+    
     @classmethod
     def from_parsed_config(cls, pipeline_config, pipeline):
         """
-        Create a Step instance from a JSON configuration file 
-        `configFile` which specifies the Step steps, data directories
-        etc.
+        Create a Step instance from a parsed Pipeline configuration file 
+        `pipeline_config` which specifies the Step steps, data directories as 
+        well as the Step configuration file path.
         
-        If a sile called <self.name>.spec is found in the same directory as the
-        Step class source code, then the configuration file is validated 
+        If a file called <self.name>.spec is found in the same directory as the
+        Step class source code, then the Step configuration file is validated 
         against the spec file.
         """
         # First understand which Step (sub)class we need to instantiate. The 
@@ -91,7 +110,52 @@ class Step(object):
                            input_info=pipeline_config.get('input', []),
                            output_info=pipeline_config.get('output', []),
                            **parameters))
+    
+    
+    
+    @classmethod
+    def from_config_file(cls, config_file, pipeline=DEFAULT_PIPELINE, name=''):
+        """
+        Create a Step instance from a ConfigObj/INI configuration file 
+        `config_file` which specifies the Pipeline steps, data directories
+        etc.
         
+        This is used in scripts where users create Steps manually without using
+        a Pipeline class. In these cases, we just use teh default Pipeline 
+        instance created for us by 
+        """
+        # Since we do not have a proper Pipeline instance with its configuration
+        # file to give us our name, we will generate one, based on the number of
+        # Steps already added to `pipeline`.
+        if(not name and not [s.name for s in pipeline.steps if s.name == name]):
+            name = 'Step%06d' % (len(pipeline.steps))
+        
+        # Do we have a spec file? If so, do parameter and input/output key 
+        # validation as well. If not keep going.
+        spec_file = utilities.find_spec_file(cls)
+        if(not spec_file):
+            pipeline.log.debug("No spec file for Step %s." % ('name'))
+        else:
+            pipeline.log.debug("Step %s specfile: %s" % (name, spec_file))
+        # Now do the actual parsing and, if we do have a spec file, validate as 
+        # well.
+        config = config_parser.loads(config_file, specfile=spec_file)
+        parameters = config.get('parameters', {})
+        
+        # Create the Step instance.
+        step_instance = cls(name=name, 
+                            pipeline=pipeline, 
+                            input_info=[], 
+                            output_info=[],
+                            **parameters)
+        
+        # Add the step instance to pipeline.steps.
+        pipeline.steps.append(step_instance)
+        
+        # Now we have everything we need to create a Step instance.
+        return(step_instance)
+        
+    
     
     def __init__(self, name, pipeline, input_info, output_info, **kws):
         """
@@ -122,6 +186,7 @@ class Step(object):
         return
     
     
+    
     def run(self, clipboard_check=True):
         """
         Do any work that we are supposed to do. Before doing the actual work 
@@ -144,6 +209,26 @@ class Step(object):
         # Now update the clipboard.
         self._put_data_to_clipboard(clipboard_check)
         return(err)
+    
+    
+    
+    def run_standalone(self, input=None, output=None):
+        """
+        This is a wrapper around self.run() mainly for the case in which users 
+        are building their pipelines by hand without using the Pipeline class. 
+        In those cases, we are not provided hints on which instance variables we
+        need to pull out of/push to DEFAULT_PIPELINE.clipboard.
+        
+        The use of `input` and `output` here is the same as self.input_info and 
+        self.output_info in the case where a Pipeline instance is used.
+        
+        Only override self.Input_info and self.output_info if really needed.
+        """
+        if(input):
+            self.input_info = input
+        if(output):
+            self.output_info = output
+        return(self.run())
     
     
     
@@ -248,6 +333,7 @@ class Step(object):
             # Now update the clipboard.
             self._clipboard[key_name] = value
         return
+    
     
     
     def process(self):
