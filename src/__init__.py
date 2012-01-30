@@ -26,3 +26,12 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+from Pipeline import Pipeline as _Pipeline
+
+
+# Create a default Pipeline instance for those cases where users create Steps
+# manually and do not go through a custon Pipeline instance.
+DEFAULT_PIPELINE = _Pipeline()
+
+
+
